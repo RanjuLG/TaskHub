@@ -18,6 +18,12 @@ namespace TaskHub.Infrastructre.Configurations
             builder.Property(t => t.Description).HasMaxLength(1000);
             builder.Property(t => t.Category).HasMaxLength(50);
 
+            builder.HasOne<User>()
+               .WithMany()
+               .HasForeignKey(t => t.UserId)
+               .OnDelete(DeleteBehavior.Cascade);
+
+
             // Global Query Filter for Soft Delete
             builder.HasQueryFilter(t => t.DeletedAt == null);
         }
