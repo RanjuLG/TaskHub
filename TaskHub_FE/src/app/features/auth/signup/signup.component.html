@@ -1,0 +1,89 @@
+<div class="auth-shell auth-shell--signup">
+  <div class="auth-card rounded-4xl">
+    <div class="mb-8 text-center">
+      <div class="auth-brand">
+        <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9V7a2 2 0 00-2-2H8a2 2 0 00-2 2v2m12 0H6m12 0v9a2 2 0 01-2 2H8a2 2 0 01-2-2V9m12 0h.01M6 9h.01"></path>
+        </svg>
+      </div>
+      <h1 class="auth-title">Create your account</h1>
+      <p class="auth-subtitle">Join TaskHub and start organizing work in one place.</p>
+    </div>
+
+    <app-confirmation-banner [message]="confirmationMessage()" title="Account created" />
+    <app-warning-banner [message]="warningMessage()" title="Registration issue" />
+
+    <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div>
+        <label for="username" class="auth-label">Username</label>
+        <input
+          id="username"
+          type="text"
+          formControlName="username"
+          placeholder="Choose a username"
+          class="auth-input auth-input--plain"
+          [class.border-rose-300]="signupForm.get('username')?.invalid && signupForm.get('username')?.touched"
+        />
+        <app-validation-message
+          [control]="signupForm.get('username')"
+          [messages]="{
+            required: 'Username is required',
+            minlength: 'Username must be at least 3 characters long'
+          }"
+        />
+      </div>
+
+      <div>
+        <label for="password" class="auth-label">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Create a strong password"
+          class="auth-input auth-input--plain"
+          [class.border-rose-300]="signupForm.get('password')?.invalid && signupForm.get('password')?.touched"
+        />
+        <app-validation-message
+          [control]="signupForm.get('password')"
+          [messages]="{
+            required: 'Password is required',
+            minlength: 'Password must be at least 8 characters long'
+          }"
+        />
+      </div>
+
+      <div>
+        <label for="confirmPassword" class="auth-label">Confirm password</label>
+        <input
+          id="confirmPassword"
+          type="password"
+          formControlName="confirmPassword"
+          placeholder="Repeat your password"
+          class="auth-input auth-input--plain"
+          [class.border-rose-300]="signupForm.get('confirmPassword')?.invalid && signupForm.get('confirmPassword')?.touched || signupForm.hasError('passwordMismatch')"
+        />
+        <app-validation-message
+          [control]="signupForm"
+          [messages]="{
+            passwordMismatch: 'Passwords do not match.'
+          }"
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="auth-button"
+        [disabled]="isSubmitting()"
+      >
+        {{ isSubmitting() ? 'Creating account...' : 'Create account' }}
+      </button>
+
+      <p class="auth-footer">
+        Already have an account?
+        <a routerLink="/login" class="auth-link">
+          Sign in
+        </a>
+      </p>
+    </form>
+  </div>
+</div>
