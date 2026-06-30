@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-confirmation-dialog',
@@ -50,14 +50,15 @@ export class ConfirmationDialogComponent {
   confirmLabel = input('Confirm');
   cancelLabel = input('Cancel');
   variant = input<'primary' | 'danger'>('primary');
-  confirmAction = input<(() => void) | null>(null);
-  cancelAction = input<(() => void) | null>(null);
+
+  confirm = output<void>();
+  cancel = output<void>();
 
   confirmClicked(): void {
-    this.confirmAction()?.();
+    this.confirm.emit();
   }
 
   cancelClicked(): void {
-    this.cancelAction()?.();
+    this.cancel.emit();
   }
 }

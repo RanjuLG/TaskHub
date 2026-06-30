@@ -17,10 +17,16 @@ export const routes: Routes = [
     canActivate: [guestGuard]
   },
   {
-    path: 'tasks',
-    loadComponent: () =>
-      import('./features/tasks/task-board/task-board.component').then(m => m.TaskBoardComponent),
+    path: '',
     canActivate: [authGuard],
+    children: [
+      {
+        path: 'tasks',
+        loadComponent: () =>
+          import('./features/tasks/task-board/task-board.component').then(m => m.TaskBoardComponent),
+      },
+      // future protected screens inherit the guard
+    ]
   },
   { path: '**', redirectTo: '/tasks' }
 ];

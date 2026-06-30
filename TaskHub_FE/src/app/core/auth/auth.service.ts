@@ -1,13 +1,11 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
-import { catchError, Observable, tap} from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly router = inject(Router);
 
   private readonly authToken = signal<string | null>(localStorage.getItem('basicAuth'));
   readonly isLoggedIn = computed(() => !!this.authToken());
@@ -21,7 +19,6 @@ export class AuthService {
       tap(() => {
         this.authToken.set(credentials);
         localStorage.setItem('basicAuth', credentials);
-        this.router.navigate(['/tasks']);
       })
     );
   }
@@ -33,7 +30,6 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem('basicAuth');
     this.authToken.set(null);
-    this.router.navigate(['/login']);
   }
 
   getToken(): string | null {

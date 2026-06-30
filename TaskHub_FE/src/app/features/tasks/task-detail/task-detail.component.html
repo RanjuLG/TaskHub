@@ -174,7 +174,7 @@
     [confirmLabel]="state.confirmLabel"
     [cancelLabel]="'Cancel'"
     [variant]="state.variant"
-    [confirmAction]="state.onConfirm"
-    [cancelAction]="dismissConfirmation"
+    (confirm)="state.onConfirm()"
+    (cancel)="dismissConfirmation()"
   />
 }

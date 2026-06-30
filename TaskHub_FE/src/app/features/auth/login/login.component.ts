@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ValidationMessageComponent } from '../../../shared/ui/validation-message/validation-message.component';
 import { WarningBannerComponent } from '../../../shared/ui/warning-banner/warning-banner.component';
@@ -17,6 +17,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 export class LoginComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   warningMessage = signal<string | null>(null);
@@ -33,6 +34,9 @@ export class LoginComponent {
       this.authService.login(username, password)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
+        next: () => {
+          this.router.navigate(['/tasks']);
+        },
         error: () => {
           this.warningMessage.set('Sign in failed. Check your username and password, then try again.');
         }

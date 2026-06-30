@@ -63,7 +63,7 @@ export class TaskDetailComponent {
       },
     });
   }
-  dismissConfirmation = (): void => {
+  dismissConfirmation(): void {
     this.confirmationState.set(null);
-  };
+  }
 }

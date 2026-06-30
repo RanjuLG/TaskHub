@@ -267,24 +267,36 @@ export class TaskBoardComponent implements OnInit {
     const formValue = this.taskForm.value;
 
     if (this.isEditing() && this.selectedTask()) {
+      const existingTask = this.selectedTask()!;
       const payload: UpdateTaskPayload = {
         title: formValue.title!,
         description: formValue.description || '',
         category: formValue.category || '',
         deadline: formValue.deadline || undefined,
-        isCompleted: this.selectedTask()!.isCompleted,
+        isCompleted: existingTask.isCompleted,
       };
 
-      this.taskService.updateTask(this.selectedTask()!.id, payload)
+      const previousTasks = this.tasks();
+      const previousCategories = this.availableCategories();
+      const updatedTask: TaskItem = { ...existingTask, ...payload };
+
+      this.tasks.update(tasks => tasks.map(t => (t.id === existingTask.id ? updatedTask : t)));
+      this.selectedTask.set(updatedTask);
+      if (payload.category && !this.availableCategories().includes(payload.category)) {
+        this.availableCategories.update(categories => [...categories, payload.category!]);
+      }
+
+      this.taskService.updateTask(existingTask.id, payload)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           this.isSaving.set(false);
           this.isFormActive.set(false);
-          this.currentPage.set(1);
-          this.loadTasks();
         },
         error: () => {
+          this.tasks.set(previousTasks);
+          this.selectedTask.set(existingTask);
+          this.availableCategories.set(previousCategories);
           this.isSaving.set(false);
           this.formError.set('Failed to update the task. Please try again.');
         },
@@ -300,11 +312,24 @@ export class TaskBoardComponent implements OnInit {
       this.taskService.createTask(payload)
        .pipe(takeUntilDestroyed(this.destroyRef))
        .subscribe({
-        next: () => {
+        next: (createdTask) => {
           this.isSaving.set(false);
           this.isFormActive.set(false);
-          this.currentPage.set(1);
-          this.loadTasks();
+          this.pendingTasksCount.update(count => count + 1);
+
+          if (createdTask.category && !this.availableCategories().includes(createdTask.category)) {
+            this.availableCategories.update(categories => [...categories, createdTask.category!]);
+          }
+
+          const matchesCurrentView = this.currentTab() === 'pending' && this.currentCategory() === 'all';
+          if (matchesCurrentView) {
+            this.totalCount.update(count => count + 1);
+            this.totalPages.set(Math.ceil(this.totalCount() / this.pageSize));
+
+            if (this.currentPage() === 1) {
+              this.tasks.update(tasks => [createdTask, ...tasks].slice(0, this.pageSize));
+            }
+          }
         },
         error: () => {
           this.isSaving.set(false);
@@ -319,14 +344,43 @@ export class TaskBoardComponent implements OnInit {
     this.detailError.set(null);
     this.detailSuccess.set(null);
 
+    const previousTasks = this.tasks();
+    const previousTotalCount = this.totalCount();
+    const previousTotalPages = this.totalPages();
+    const previousPendingCount = this.pendingTasksCount();
+    const previousCompletedCount = this.completedTasksCount();
+    const previousSelectedTask = this.selectedTask();
+    const wasVisibleInCurrentTab = this.currentTab() === 'pending';
+
+    if (wasVisibleInCurrentTab) {
+      this.tasks.update(tasks => tasks.filter(t => t.id !== task.id));
+      const newTotalCount = Math.max(0, previousTotalCount - 1);
+      this.totalCount.set(newTotalCount);
+      this.totalPages.set(Math.ceil(newTotalCount / this.pageSize));
+    }
+    this.pendingTasksCount.set(Math.max(0, previousPendingCount - 1));
+    this.completedTasksCount.set(previousCompletedCount + 1);
+    if (previousSelectedTask?.id === task.id) {
+      this.selectedTask.set(null);
+    }
+
     this.taskService.markAsComplete(task.id)
     .pipe(takeUntilDestroyed(this.destroyRef))
     .subscribe({
       next: () => {
-        this.loadTasks();
         this.detailSuccess.set(`"${task.title}" has been marked as complete.`);
+        if (wasVisibleInCurrentTab && this.tasks().length === 0 && this.currentPage() > 1) {
+          this.currentPage.update(page => page - 1);
+          this.loadTasks();
+        }
       },
       error: () => {
+        this.tasks.set(previousTasks);
+        this.totalCount.set(previousTotalCount);
+        this.totalPages.set(previousTotalPages);
+        this.pendingTasksCount.set(previousPendingCount);
+        this.completedTasksCount.set(previousCompletedCount);
+        this.selectedTask.set(previousSelectedTask);
         this.detailError.set('Failed to update the task. Please try again.');
       },
     });
@@ -336,16 +390,42 @@ export class TaskBoardComponent implements OnInit {
     this.detailError.set(null);
     this.detailSuccess.set(null);
 
+    const previousTasks = this.tasks();
+    const previousTotalCount = this.totalCount();
+    const previousTotalPages = this.totalPages();
+    const previousPendingCount = this.pendingTasksCount();
+    const previousCompletedCount = this.completedTasksCount();
+    const previousSelectedTask = this.selectedTask();
+
+    this.tasks.update(tasks => tasks.filter(t => t.id !== task.id));
+    const newTotalCount = Math.max(0, previousTotalCount - 1);
+    this.totalCount.set(newTotalCount);
+    this.totalPages.set(Math.ceil(newTotalCount / this.pageSize));
+    if (task.isCompleted) {
+      this.completedTasksCount.set(Math.max(0, previousCompletedCount - 1));
+    } else {
+      this.pendingTasksCount.set(Math.max(0, previousPendingCount - 1));
+    }
+    if (previousSelectedTask?.id === task.id) {
+      this.selectedTask.set(null);
+    }
+
     this.taskService.deleteTask(task.id)
     .pipe(takeUntilDestroyed(this.destroyRef))
     .subscribe({
       next: () => {
-        if (this.selectedTask()?.id === task.id) {
-          this.selectedTask.set(null);
+        if (this.tasks().length === 0 && this.currentPage() > 1) {
+          this.currentPage.update(page => page - 1);
+          this.loadTasks();
         }
-        this.loadTasks();
       },
       error: () => {
+        this.tasks.set(previousTasks);
+        this.totalCount.set(previousTotalCount);
+        this.totalPages.set(previousTotalPages);
+        this.pendingTasksCount.set(previousPendingCount);
+        this.completedTasksCount.set(previousCompletedCount);
+        this.selectedTask.set(previousSelectedTask);
         this.detailError.set('Failed to delete the task. Please try again.');
       },
     });

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
@@ -42,11 +43,13 @@ import { AuthService } from '../../../core/auth/auth.service';
 })
 export class TaskTopBarComponent {
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   title = input('TaskHub');
   subtitle = input('Plan work, stay focused');
   username = input<string | null>(null);
 
   logout(): void {
     this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }
