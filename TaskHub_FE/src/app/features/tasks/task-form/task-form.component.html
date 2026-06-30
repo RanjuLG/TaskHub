@@ -1,0 +1,92 @@
+<div class="p-8 lg:p-12 max-w-3xl mx-auto w-full">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">
+      {{ isEditing() ? 'Edit Task' : 'Create New Task' }}
+    </h2>
+    <p class="text-sm text-gray-500 mt-2">
+      {{
+        isEditing()
+          ? 'Update the details of your task.'
+          : 'Fill in the information below to add a new task to your board.'
+      }}
+    </p>
+  </div>
+
+  <app-warning-banner [message]="errorMessage()" />
+  <app-confirmation-banner [message]="successMessage()" />
+
+  <form [formGroup]="form()" (ngSubmit)="onSubmit()" class="bg-white space-y-6">
+    <div>
+      <label for="tf-title" class="block text-sm font-semibold text-gray-700 mb-1.5">
+        Task Title <span class="text-red-500">*</span>
+      </label>
+      <input
+        type="text"
+        id="tf-title"
+        formControlName="title"
+        placeholder="What needs to be done?"
+        class="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-gray-50/50 focus:bg-white"
+      />
+      <app-validation-message
+        [control]="form().get('title')"
+        [messages]="{ required: 'Title is required' }"
+      />
+    </div>
+
+    <div>
+      <label for="tf-description" class="block text-sm font-semibold text-gray-700 mb-1.5"
+        >Description</label
+      >
+      <textarea
+        id="tf-description"
+        formControlName="description"
+        rows="5"
+        placeholder="Add any extra details, links, or context..."
+        class="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-gray-50/50 focus:bg-white"
+      ></textarea>
+    </div>
+
+    <div>
+      <label for="tf-category" class="block text-sm font-semibold text-gray-700 mb-1.5"
+        >Category</label
+      >
+      <input
+        type="text"
+        id="tf-category"
+        formControlName="category"
+        placeholder="e.g. Design, Frontend, Marketing..."
+        class="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-gray-50/50 focus:bg-white"
+      />
+    </div>
+
+    <div>
+      <label for="tf-deadline" class="block text-sm font-semibold text-gray-700 mb-1.5"
+        >Deadline</label
+      >
+      <input
+        type="date"
+        id="tf-deadline"
+        formControlName="deadline"
+        class="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-gray-50/50 focus:bg-white"
+      />
+      <p class="mt-1.5 text-xs text-gray-500">Optional. Set a due date if this task needs one.</p>
+    </div>
+
+    <div class="pt-6 flex justify-end space-x-3 border-t border-gray-100 mt-8">
+      <button
+        type="button"
+        (click)="cancel.emit()"
+        class="px-5 py-2.5 border border-gray-300 rounded-xl shadow-sm text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        [disabled]="form().invalid || isSaving()"
+        class="px-6 py-2.5 border border-transparent rounded-xl shadow-[0_4px_10px_rgba(37,99,235,0.2)] text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+      >
+        {{ isEditing() ? 'Save Changes' : 'Create Task' }}
+      </button>
+    </div>
+  </form>
+</div>
