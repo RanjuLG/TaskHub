@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { AbstractControl, ReactiveFormsModule, ValidationErrors, Validators, FormBuilder } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ConfirmationBannerComponent } from '../../../shared/ui/confirmation-banner/confirmation-banner.component';
 import { ValidationMessageComponent } from '../../../shared/ui/validation-message/validation-message.component';
 import { WarningBannerComponent } from '../../../shared/ui/warning-banner/warning-banner.component';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 function passwordsMatchValidator(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password')?.value as string | null;
@@ -28,6 +29,7 @@ function passwordsMatchValidator(control: AbstractControl): ValidationErrors | n
 export class SignupComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
 
   isSubmitting = signal(false);
   warningMessage = signal<string | null>(null);
@@ -54,7 +56,9 @@ export class SignupComponent {
     this.warningMessage.set(null);
     this.confirmationMessage.set(null);
 
-    this.authService.register(username, password).subscribe({
+    this.authService.register(username, password)
+    .pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
       next: () => {
         this.signupForm.reset();
         this.confirmationMessage.set('Your account is ready. Sign in with your new credentials.');

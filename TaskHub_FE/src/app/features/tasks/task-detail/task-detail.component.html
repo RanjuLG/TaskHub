@@ -166,15 +166,15 @@
 </div>
 
 <!-- Confirmation dialog (scoped to this component) -->
-@if (confirmationState) {
+@if (confirmationState(); as state) {
   <app-confirmation-dialog
     [open]="true"
-    [title]="confirmationState.title"
-    [message]="confirmationState.message"
-    [confirmLabel]="confirmationState.confirmLabel"
+    [title]="state.title"
+    [message]="state.message"
+    [confirmLabel]="state.confirmLabel"
     [cancelLabel]="'Cancel'"
-    [variant]="confirmationState.variant"
-    [confirmAction]="confirmationState.onConfirm"
+    [variant]="state.variant"
+    [confirmAction]="state.onConfirm"
     [cancelAction]="dismissConfirmation"
   />
 }

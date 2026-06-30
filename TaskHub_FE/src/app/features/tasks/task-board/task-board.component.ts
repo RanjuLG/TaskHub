@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   ElementRef,
   HostListener,
   inject,
@@ -18,6 +19,7 @@ import {
   UpdateTaskPayload,
   TaskSortOption,
 } from '../../../core/models/task.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TaskTopBarComponent } from '../../../shared/ui/top-bar/task-top-bar.component';
 import { TaskFormComponent } from '../task-form/task-form.component';
 import { TaskDetailComponent } from '../task-detail/task-detail.component';
@@ -41,6 +43,7 @@ type TaskTab = 'pending' | 'completed';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TaskBoardComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private taskService = inject(TaskService);
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
@@ -114,6 +117,7 @@ export class TaskBoardComponent implements OnInit {
         pageNumber: this.currentPage(),
         pageSize: this.pageSize,
       })
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
           if (
@@ -271,7 +275,9 @@ export class TaskBoardComponent implements OnInit {
         isCompleted: this.selectedTask()!.isCompleted,
       };
 
-      this.taskService.updateTask(this.selectedTask()!.id, payload).subscribe({
+      this.taskService.updateTask(this.selectedTask()!.id, payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
         next: () => {
           this.isSaving.set(false);
           this.isFormActive.set(false);
@@ -291,7 +297,9 @@ export class TaskBoardComponent implements OnInit {
         deadline: formValue.deadline || undefined,
       };
 
-      this.taskService.createTask(payload).subscribe({
+      this.taskService.createTask(payload)
+       .pipe(takeUntilDestroyed(this.destroyRef))
+       .subscribe({
         next: () => {
           this.isSaving.set(false);
           this.isFormActive.set(false);
@@ -311,7 +319,9 @@ export class TaskBoardComponent implements OnInit {
     this.detailError.set(null);
     this.detailSuccess.set(null);
 
-    this.taskService.markAsComplete(task.id).subscribe({
+    this.taskService.markAsComplete(task.id)
+    .pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
       next: () => {
         this.loadTasks();
         this.detailSuccess.set(`"${task.title}" has been marked as complete.`);
@@ -326,7 +336,9 @@ export class TaskBoardComponent implements OnInit {
     this.detailError.set(null);
     this.detailSuccess.set(null);
 
-    this.taskService.deleteTask(task.id).subscribe({
+    this.taskService.deleteTask(task.id)
+    .pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
       next: () => {
         if (this.selectedTask()?.id === task.id) {
           this.selectedTask.set(null);
@@ -345,9 +357,5 @@ export class TaskBoardComponent implements OnInit {
     this.formSuccess.set(null);
     this.detailError.set(null);
     this.detailSuccess.set(null);
-  }
-
-  logout() {
-    this.authService.logout();
   }
 }

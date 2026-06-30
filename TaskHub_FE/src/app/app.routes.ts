@@ -1,12 +1,26 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './features/auth/login/login.component';
-import { TaskBoardComponent } from './features/tasks/task-board/task-board.component';
 import { authGuard } from './core/guards/auth.guard';
-import { SignupComponent } from './features/auth/signup/signup.component';
+import { guestGuard } from './core/guards/guest.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/tasks', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
-  { path: 'signup', component: SignupComponent },
-  { path: 'tasks', component: TaskBoardComponent, canActivate: [authGuard] }
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./features/auth/login/login.component').then(m => m.LoginComponent),
+    canActivate: [guestGuard]
+  },
+  {
+    path: 'signup',
+    loadComponent: () =>
+      import('./features/auth/signup/signup.component').then(m => m.SignupComponent),
+    canActivate: [guestGuard]
+  },
+  {
+    path: 'tasks',
+    loadComponent: () =>
+      import('./features/tasks/task-board/task-board.component').then(m => m.TaskBoardComponent),
+    canActivate: [authGuard],
+  },
+  { path: '**', redirectTo: '/tasks' }
 ];

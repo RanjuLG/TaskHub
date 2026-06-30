@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TaskItem } from '../../../core/models/task.model';
 import { ConfirmationDialogComponent } from '../../../shared/ui/confirmation-dialog/confirmation-dialog.component';
@@ -23,7 +23,7 @@ interface ConfirmationState {
     ConfirmationBannerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './task-details.component.html',
+  templateUrl: './task-detail.component.html',
 })
 export class TaskDetailComponent {
   task = input.required<TaskItem>();
@@ -37,35 +37,33 @@ export class TaskDetailComponent {
   markComplete = output<TaskItem>();
   delete = output<TaskItem>();
 
-  confirmationState: ConfirmationState | null = null;
+  confirmationState = signal<ConfirmationState | null>(null);
 
   requestComplete(): void {
-    this.confirmationState = {
+    this.confirmationState.set({
       title: 'Mark task as completed?',
       message: `This will move "${this.task().title}" into the completed tasks list`,
       confirmLabel: 'Mark complete',
       variant: 'primary',
       onConfirm: () => {
-        this.confirmationState = null;
+        this.confirmationState.set(null);
         this.markComplete.emit(this.task());
       },
-    };
+    });
   }
-
   requestDelete(): void {
-    this.confirmationState = {
+    this.confirmationState.set({
       title: 'Delete this task?',
       message: `This will remove "${this.task().title}" from your board. You can't undo this action.`,
       confirmLabel: 'Delete task',
       variant: 'danger',
       onConfirm: () => {
-        this.confirmationState = null;
+        this.confirmationState.set(null);
         this.delete.emit(this.task());
       },
-    };
+    });
   }
-
   dismissConfirmation = (): void => {
-    this.confirmationState = null;
+    this.confirmationState.set(null);
   };
 }
