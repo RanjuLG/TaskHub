@@ -6,8 +6,17 @@ namespace TaskHub.Domain.Entities
 {
     public class User
     {
-        public Guid Id { get; set; }
-        public string Username { get; set; } = string.Empty;
-        public string PasswordHash { get; set; } = string.Empty;
+        public Guid Id { get; private set; }
+        public string Username { get; private set; } = string.Empty;
+        public string PasswordHash { get; private set; } = string.Empty;
+
+        private User() { }
+
+        public User(string username, string passwordHash)
+        {
+            Id = Guid.NewGuid();
+            Username = username;
+            PasswordHash = passwordHash;
+        }
     }
 }

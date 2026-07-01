@@ -30,12 +30,7 @@ namespace TaskHub.Api.Controllers
                 return BadRequest(new { Message = "Username is already taken." });
             }
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Username = dto.Username,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
-            };
+            var user = new User(dto.Username, BCrypt.Net.BCrypt.HashPassword(dto.Password));
 
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();

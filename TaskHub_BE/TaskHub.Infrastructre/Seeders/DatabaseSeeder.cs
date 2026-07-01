@@ -25,12 +25,7 @@ namespace TaskHub.Infrastructre.Seeders
 
                 if (adminUser == null)
                 {
-                    adminUser = new User
-                    {
-                        Id = Guid.NewGuid(),
-                        Username = "admin",
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123")
-                    };
+                    adminUser = new User("admin", BCrypt.Net.BCrypt.HashPassword("admin123"));
 
                     await context.Users.AddAsync(adminUser);
                     await context.SaveChangesAsync();
