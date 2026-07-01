@@ -3,15 +3,20 @@ export interface TaskItem {
   title: string;
   description?: string;
   isCompleted: boolean;
-  category?: string;
+  categoryId?: string;
+  categoryName?: string;
   completedAt?: string;
   deadline?: string;
-  createdAt: string; 
+  createdAt: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
 }
 
 export interface TaskListResponse {
   items: TaskItem[];
-  categories: string[];
   pageNumber: number;
   pageSize: number;
   totalCount: number;
@@ -21,7 +26,7 @@ export interface TaskListResponse {
 }
 
 export interface GetTasksParams {
-  category?: string;
+  categoryId?: string;
   isCompleted?: boolean;
   sortBy?: TaskSortOption;
   pageNumber?: number;
@@ -31,14 +36,14 @@ export interface GetTasksParams {
 export interface CreateTaskPayload {
   title: string;
   description?: string;
-  category?: string;
+  categoryId?: string;
   deadline?: string;
 }
 
 export interface UpdateTaskPayload {
   title: string;
   description?: string;
-  category?: string;
+  categoryId?: string;
   isCompleted: boolean;
   deadline?: string;
 }

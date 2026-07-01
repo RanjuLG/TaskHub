@@ -18,6 +18,7 @@ import {
   CreateTaskPayload,
   UpdateTaskPayload,
   TaskSortOption,
+  Category,
 } from '../../../core/models/task.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TaskTopBarComponent } from '../../../shared/ui/top-bar/task-top-bar.component';
@@ -51,7 +52,7 @@ export class TaskBoardComponent implements OnInit {
 
   // ── List state ─────────────────────────────────────────────────────────────
   tasks = signal<TaskItem[]>([]);
-  availableCategories = signal<string[]>([]);
+  categories = signal<Category[]>([]);
   selectedTask = signal<TaskItem | null>(null);
   isLoading = signal<boolean>(true);
 
@@ -63,6 +64,8 @@ export class TaskBoardComponent implements OnInit {
   // ── Notification signals for the form panel ─────────────────────────────────
   formError = signal<string | null>(null);
   formSuccess = signal<string | null>(null);
+  isCreatingCategory = signal<boolean>(false);
+  categoryError = signal<string | null>(null);
 
   // ── Notification signals for the detail panel ───────────────────────────────
   detailError = signal<string | null>(null);
@@ -73,7 +76,7 @@ export class TaskBoardComponent implements OnInit {
   currentSort = signal<TaskSortOption>(TaskSortOption.Default);
   sortMenuOpen = signal<boolean>(false);
   currentTab = signal<TaskTab>('pending');
-  currentCategory = signal<string>('all');
+  currentCategoryId = signal<string>('all');
   currentPage = signal<number>(1);
   pageSize = 8;
   totalCount = signal<number>(0);
@@ -94,24 +97,34 @@ export class TaskBoardComponent implements OnInit {
   taskForm = this.fb.group({
     title: ['', Validators.required],
     description: [''],
-    category: [''],
+    categoryId: [''],
     deadline: [''],
   });
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   ngOnInit() {
     this.username.set(this.authService.getUsername() || 'User');
+    this.loadCategories();
     this.loadTasks();
   }
 
   // ── Data loading ───────────────────────────────────────────────────────────
+  loadCategories() {
+    this.taskService
+      .getCategories()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (categories) => this.categories.set(categories),
+      });
+  }
+
   loadTasks() {
     this.isLoading.set(true);
 
     this.taskService
       .getTasks({
-        category:
-          this.currentCategory() === 'all' ? undefined : this.currentCategory(),
+        categoryId:
+          this.currentCategoryId() === 'all' ? undefined : this.currentCategoryId(),
         isCompleted: this.currentTab() === 'completed',
         sortBy: this.currentSort(),
         pageNumber: this.currentPage(),
@@ -130,7 +143,6 @@ export class TaskBoardComponent implements OnInit {
           }
 
           this.tasks.set(response.items);
-          this.availableCategories.set(response.categories);
           this.totalCount.set(response.totalCount);
           this.totalPages.set(response.totalPages);
           this.pendingTasksCount.set(response.pendingCount);
@@ -150,17 +162,6 @@ export class TaskBoardComponent implements OnInit {
   }
 
   // ── Computed ───────────────────────────────────────────────────────────────
-  categories = computed(() => {
-    const uniqueCategories = Array.from(
-      new Set(
-        this.availableCategories()
-          .map((category) => category || 'General')
-          .filter((category) => category && category !== 'default')
-      )
-    );
-    return uniqueCategories.sort();
-  });
-
   pageNumbers = computed(() =>
     Array.from({ length: this.totalPages() }, (_, index) => index + 1)
   );
@@ -195,7 +196,7 @@ export class TaskBoardComponent implements OnInit {
 
   changeCategory(event: Event) {
     const value = (event.target as HTMLSelectElement).value;
-    this.currentCategory.set(value);
+    this.currentCategoryId.set(value);
     this.currentPage.set(1);
     this.loadTasks();
   }
@@ -246,7 +247,7 @@ export class TaskBoardComponent implements OnInit {
     this.taskForm.patchValue({
       title: task.title,
       description: task.description || '',
-      category: task.category || '',
+      categoryId: task.categoryId || '',
       deadline: task.deadline || '',
     });
     this.clearNotifications();
@@ -255,6 +256,29 @@ export class TaskBoardComponent implements OnInit {
   cancelForm() {
     this.isFormActive.set(false);
     this.clearNotifications();
+  }
+
+  onCreateCategory(name: string) {
+    this.categoryError.set(null);
+    this.isCreatingCategory.set(true);
+
+    this.taskService.createCategory(name)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (category) => {
+          this.isCreatingCategory.set(false);
+          if (!this.categories().some(c => c.id === category.id)) {
+            this.categories.update(categories =>
+              [...categories, category].sort((a, b) => a.name.localeCompare(b.name))
+            );
+          }
+          this.taskForm.patchValue({ categoryId: category.id });
+        },
+        error: () => {
+          this.isCreatingCategory.set(false);
+          this.categoryError.set('Failed to create the category. Please try again.');
+        },
+      });
   }
 
   onSaveTask() {
@@ -271,20 +295,17 @@ export class TaskBoardComponent implements OnInit {
       const payload: UpdateTaskPayload = {
         title: formValue.title!,
         description: formValue.description || '',
-        category: formValue.category || '',
+        categoryId: formValue.categoryId || undefined,
         deadline: formValue.deadline || undefined,
         isCompleted: existingTask.isCompleted,
       };
 
       const previousTasks = this.tasks();
-      const previousCategories = this.availableCategories();
-      const updatedTask: TaskItem = { ...existingTask, ...payload };
+      const categoryName = this.categories().find(c => c.id === payload.categoryId)?.name;
+      const updatedTask: TaskItem = { ...existingTask, ...payload, categoryName };
 
       this.tasks.update(tasks => tasks.map(t => (t.id === existingTask.id ? updatedTask : t)));
       this.selectedTask.set(updatedTask);
-      if (payload.category && !this.availableCategories().includes(payload.category)) {
-        this.availableCategories.update(categories => [...categories, payload.category!]);
-      }
 
       this.taskService.updateTask(existingTask.id, payload)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -296,7 +317,6 @@ export class TaskBoardComponent implements OnInit {
         error: () => {
           this.tasks.set(previousTasks);
           this.selectedTask.set(existingTask);
-          this.availableCategories.set(previousCategories);
           this.isSaving.set(false);
           this.formError.set('Failed to update the task. Please try again.');
         },
@@ -305,7 +325,7 @@ export class TaskBoardComponent implements OnInit {
       const payload: CreateTaskPayload = {
         title: formValue.title!,
         description: formValue.description || '',
-        category: formValue.category || '',
+        categoryId: formValue.categoryId || undefined,
         deadline: formValue.deadline || undefined,
       };
 
@@ -317,11 +337,7 @@ export class TaskBoardComponent implements OnInit {
           this.isFormActive.set(false);
           this.pendingTasksCount.update(count => count + 1);
 
-          if (createdTask.category && !this.availableCategories().includes(createdTask.category)) {
-            this.availableCategories.update(categories => [...categories, createdTask.category!]);
-          }
-
-          const matchesCurrentView = this.currentTab() === 'pending' && this.currentCategory() === 'all';
+          const matchesCurrentView = this.currentTab() === 'pending' && this.currentCategoryId() === 'all';
           if (matchesCurrentView) {
             this.totalCount.update(count => count + 1);
             this.totalPages.set(Math.ceil(this.totalCount() / this.pageSize));
@@ -437,5 +453,6 @@ export class TaskBoardComponent implements OnInit {
     this.formSuccess.set(null);
     this.detailError.set(null);
     this.detailSuccess.set(null);
+    this.categoryError.set(null);
   }
 }

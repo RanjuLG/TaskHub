@@ -9,14 +9,14 @@
       <div class="flex items-center flex-wrap gap-3 mb-3">
         <span
           class="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border"
-          [class.bg-gray-50]="task().category === 'default' || !task().category"
-          [class.text-gray-600]="task().category === 'default' || !task().category"
-          [class.border-gray-200]="task().category === 'default' || !task().category"
-          [class.bg-blue-50]="task().category !== 'default' && task().category"
-          [class.text-blue-700]="task().category !== 'default' && task().category"
-          [class.border-blue-200]="task().category !== 'default' && task().category"
+          [class.bg-gray-50]="!task().categoryName"
+          [class.text-gray-600]="!task().categoryName"
+          [class.border-gray-200]="!task().categoryName"
+          [class.bg-blue-50]="task().categoryName"
+          [class.text-blue-700]="task().categoryName"
+          [class.border-blue-200]="task().categoryName"
         >
-          {{ task().category || 'General' }}
+          {{ task().categoryName || 'General' }}
         </span>
 
         @if (task().isCompleted) {

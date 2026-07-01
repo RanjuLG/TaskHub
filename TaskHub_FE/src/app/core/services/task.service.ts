@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CreateTaskPayload, GetTasksParams, TaskItem, TaskListResponse, UpdateTaskPayload } from '../models/task.model';
+import { Category, CreateTaskPayload, GetTasksParams, TaskItem, TaskListResponse, UpdateTaskPayload } from '../models/task.model';
 
 @Injectable({
   providedIn: 'root'
@@ -10,14 +10,15 @@ import { CreateTaskPayload, GetTasksParams, TaskItem, TaskListResponse, UpdateTa
 export class TaskService {
 
   private readonly http = inject(HttpClient);
-  
+
   private readonly apiUrl = `${environment.apiUrl}/tasks`;
+  private readonly categoriesUrl = `${environment.apiUrl}/categories`;
 
   getTasks(query: GetTasksParams = {}): Observable<TaskListResponse> {
     let params = new HttpParams();
 
-    if (query.category) {
-      params = params.set('category', query.category);
+    if (query.categoryId) {
+      params = params.set('categoryId', query.categoryId);
     }
 
     if (query.isCompleted !== undefined) {
@@ -57,5 +58,13 @@ export class TaskService {
 
   deleteTask(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  getCategories(): Observable<Category[]> {
+    return this.http.get<Category[]>(this.categoriesUrl);
+  }
+
+  createCategory(name: string): Observable<Category> {
+    return this.http.post<Category>(this.categoriesUrl, { name });
   }
 }

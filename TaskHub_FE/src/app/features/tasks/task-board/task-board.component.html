@@ -45,13 +45,13 @@
               </label>
               <select
                 id="category"
-                [value]="currentCategory()"
+                [value]="currentCategoryId()"
                 (change)="changeCategory($event)"
                 class="task-board-select"
               >
                 <option value="all">All Categories</option>
-                @for (category of categories(); track category) {
-                  <option [value]="category">{{ category }}</option>
+                @for (category of categories(); track category.id) {
+                  <option [value]="category.id">{{ category.name }}</option>
                 }
               </select>
             </div>
@@ -196,14 +196,14 @@
                 </h3>
                 <span
                   class="task-board-chip"
-                  [class.bg-gray-50]="task.category === 'default' || !task.category"
-                  [class.text-gray-500]="task.category === 'default' || !task.category"
-                  [class.border-gray-200]="task.category === 'default' || !task.category"
-                  [class.bg-blue-50]="task.category !== 'default' && task.category"
-                  [class.text-blue-700]="task.category !== 'default' && task.category"
-                  [class.border-blue-200]="task.category !== 'default' && task.category"
+                  [class.bg-gray-50]="!task.categoryName"
+                  [class.text-gray-500]="!task.categoryName"
+                  [class.border-gray-200]="!task.categoryName"
+                  [class.bg-blue-50]="task.categoryName"
+                  [class.text-blue-700]="task.categoryName"
+                  [class.border-blue-200]="task.categoryName"
                 >
-                  {{ task.category || 'General' }}
+                  {{ task.categoryName || 'General' }}
                 </span>
               </div>
 
@@ -324,10 +324,14 @@
           [form]="taskForm"
           [isEditing]="isEditing()"
           [isSaving]="isSaving()"
+          [categories]="categories()"
+          [isCreatingCategory]="isCreatingCategory()"
+          [categoryError]="categoryError()"
           [errorMessage]="formError()"
           [successMessage]="formSuccess()"
           (save)="onSaveTask()"
           (cancel)="cancelForm()"
+          (createCategory)="onCreateCategory($event)"
         />
       } @else if (selectedTask(); as task) {
         <app-task-detail
