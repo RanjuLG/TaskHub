@@ -28,6 +28,9 @@ namespace TaskHub.Infrastructre.Configurations
                .OnDelete(DeleteBehavior.SetNull);
 
 
+            // filters by UserId and commonly narrows by CategoryId/IsCompleted.
+            builder.HasIndex(t => new { t.UserId, t.CategoryId, t.IsCompleted });
+
             // Global Query Filter for Soft Delete
             builder.HasQueryFilter(t => t.DeletedAt == null);
         }
