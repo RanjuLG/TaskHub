@@ -8,6 +8,7 @@ import {
   inject,
   OnInit,
   signal,
+  WritableSignal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -300,7 +301,7 @@ export class TaskBoardComponent implements OnInit {
         isCompleted: existingTask.isCompleted,
       };
 
-      const previousTasks = this.tasks();
+      const restore = this.snapshot(this.tasks, this.selectedTask);
       const categoryName = this.categories().find(c => c.id === payload.categoryId)?.name;
       const updatedTask: TaskItem = { ...existingTask, ...payload, categoryName };
 
@@ -315,8 +316,7 @@ export class TaskBoardComponent implements OnInit {
           this.isFormActive.set(false);
         },
         error: () => {
-          this.tasks.set(previousTasks);
-          this.selectedTask.set(existingTask);
+          restore();
           this.isSaving.set(false);
           this.formError.set('Failed to update the task. Please try again.');
         },
@@ -360,23 +360,21 @@ export class TaskBoardComponent implements OnInit {
     this.detailError.set(null);
     this.detailSuccess.set(null);
 
-    const previousTasks = this.tasks();
-    const previousTotalCount = this.totalCount();
-    const previousTotalPages = this.totalPages();
-    const previousPendingCount = this.pendingTasksCount();
-    const previousCompletedCount = this.completedTasksCount();
-    const previousSelectedTask = this.selectedTask();
+    const restore = this.snapshot(
+      this.tasks, this.totalCount, this.totalPages,
+      this.pendingTasksCount, this.completedTasksCount, this.selectedTask
+    );
     const wasVisibleInCurrentTab = this.currentTab() === 'pending';
 
     if (wasVisibleInCurrentTab) {
       this.tasks.update(tasks => tasks.filter(t => t.id !== task.id));
-      const newTotalCount = Math.max(0, previousTotalCount - 1);
+      const newTotalCount = Math.max(0, this.totalCount() - 1);
       this.totalCount.set(newTotalCount);
       this.totalPages.set(Math.ceil(newTotalCount / this.pageSize));
     }
-    this.pendingTasksCount.set(Math.max(0, previousPendingCount - 1));
-    this.completedTasksCount.set(previousCompletedCount + 1);
-    if (previousSelectedTask?.id === task.id) {
+    this.pendingTasksCount.update(count => Math.max(0, count - 1));
+    this.completedTasksCount.update(count => count + 1);
+    if (this.selectedTask()?.id === task.id) {
       this.selectedTask.set(null);
     }
 
@@ -391,12 +389,7 @@ export class TaskBoardComponent implements OnInit {
         }
       },
       error: () => {
-        this.tasks.set(previousTasks);
-        this.totalCount.set(previousTotalCount);
-        this.totalPages.set(previousTotalPages);
-        this.pendingTasksCount.set(previousPendingCount);
-        this.completedTasksCount.set(previousCompletedCount);
-        this.selectedTask.set(previousSelectedTask);
+        restore();
         this.detailError.set('Failed to update the task. Please try again.');
       },
     });
@@ -406,23 +399,21 @@ export class TaskBoardComponent implements OnInit {
     this.detailError.set(null);
     this.detailSuccess.set(null);
 
-    const previousTasks = this.tasks();
-    const previousTotalCount = this.totalCount();
-    const previousTotalPages = this.totalPages();
-    const previousPendingCount = this.pendingTasksCount();
-    const previousCompletedCount = this.completedTasksCount();
-    const previousSelectedTask = this.selectedTask();
+    const restore = this.snapshot(
+      this.tasks, this.totalCount, this.totalPages,
+      this.pendingTasksCount, this.completedTasksCount, this.selectedTask
+    );
 
     this.tasks.update(tasks => tasks.filter(t => t.id !== task.id));
-    const newTotalCount = Math.max(0, previousTotalCount - 1);
+    const newTotalCount = Math.max(0, this.totalCount() - 1);
     this.totalCount.set(newTotalCount);
     this.totalPages.set(Math.ceil(newTotalCount / this.pageSize));
     if (task.isCompleted) {
-      this.completedTasksCount.set(Math.max(0, previousCompletedCount - 1));
+      this.completedTasksCount.update(count => Math.max(0, count - 1));
     } else {
-      this.pendingTasksCount.set(Math.max(0, previousPendingCount - 1));
+      this.pendingTasksCount.update(count => Math.max(0, count - 1));
     }
-    if (previousSelectedTask?.id === task.id) {
+    if (this.selectedTask()?.id === task.id) {
       this.selectedTask.set(null);
     }
 
@@ -436,12 +427,7 @@ export class TaskBoardComponent implements OnInit {
         }
       },
       error: () => {
-        this.tasks.set(previousTasks);
-        this.totalCount.set(previousTotalCount);
-        this.totalPages.set(previousTotalPages);
-        this.pendingTasksCount.set(previousPendingCount);
-        this.completedTasksCount.set(previousCompletedCount);
-        this.selectedTask.set(previousSelectedTask);
+        restore();
         this.detailError.set('Failed to delete the task. Please try again.');
       },
     });
@@ -454,5 +440,13 @@ export class TaskBoardComponent implements OnInit {
     this.detailError.set(null);
     this.detailSuccess.set(null);
     this.categoryError.set(null);
+  }
+
+  /** Captures the current value of each signal and returns a function that restores them all. */
+  private snapshot<T extends readonly unknown[]>(
+    ...signals: { [K in keyof T]: WritableSignal<T[K]> }
+  ): () => void {
+    const values = signals.map((s) => s()) as unknown as T;
+    return () => signals.forEach((s, i) => s.set(values[i]));
   }
 }
