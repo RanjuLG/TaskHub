@@ -2,8 +2,6 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using Serilog.Events;
-using Serilog.Formatting.Compact;
 using TaskHub.Api.Middleware.Handlers;
 using TaskHub.Application.DTOs;
 using TaskHub.Application.Interfaces;
@@ -18,32 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
     .ReadFrom.Configuration(context.Configuration)
-    .ReadFrom.Services(services)
-    .Enrich.FromLogContext()
-    .Enrich.WithProperty("Application", "TaskHub.Api")
-
-    // Consol - human readable
-    .WriteTo.Console(
-        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
-        restrictedToMinimumLevel: LogEventLevel.Information)
-
-    // All logs - plain text file
-    .WriteTo.File(
-        path: Path.Combine("logs", "taskhub-.log"),
-        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 14,
-        restrictedToMinimumLevel: LogEventLevel.Information,
-        shared: true)
-
-    // Errors only - separate file
-    .WriteTo.File(
-        path: Path.Combine("logs", "taskhub-errors-.log"),
-        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 30,
-        restrictedToMinimumLevel: LogEventLevel.Error,
-        shared: true));
+    .ReadFrom.Services(services));
 
 
 // Add services to the container.
