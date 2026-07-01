@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System;
 
 namespace TaskHub.Application.DTOs
 {
@@ -9,7 +7,8 @@ namespace TaskHub.Application.DTOs
         string Title,
         string? Description,
         bool IsCompleted,
-        string? Category,
+        Guid? CategoryId,
+        string? CategoryName,
         DateTimeOffset? Deadline,
         DateTimeOffset? CompletedAt,
         DateTimeOffset CreatedAt

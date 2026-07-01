@@ -36,14 +36,31 @@ namespace TaskHub.Infrastructre.Seeders
                     await context.SaveChangesAsync();
                 }
 
+                // 3. Seed Default Categories
+                var categoryNames = new[] { "Work", "Study", "Personal" };
+                var existingCategories = await context.Categories
+                    .Where(c => categoryNames.Contains(c.Name))
+                    .ToDictionaryAsync(c => c.Name);
+
+                foreach (var name in categoryNames)
+                {
+                    if (!existingCategories.ContainsKey(name))
+                    {
+                        var category = new Category(name);
+                        existingCategories[name] = category;
+                        await context.Categories.AddAsync(category);
+                    }
+                }
+                await context.SaveChangesAsync();
+
                 //Seed some dummy tasks
                 if (!await context.Tasks.AnyAsync())
                 {
                     var tasks = new List<TaskItem>
                     {
-                        new TaskItem("Setup Azure DevOps Pipeline", adminUser.Id, "Create the YAML file for CI/CD", "Work", DateTimeOffset.UtcNow.AddDays(7)),
-                        new TaskItem("Review CS101", adminUser.Id, "Read up on the chapter", "Study", DateTimeOffset.UtcNow.AddDays(3)),
-                        new TaskItem("Buy groceries", adminUser.Id, "Milk, Eggs, Coffee", "Personal", DateTimeOffset.UtcNow.AddDays(1))
+                        new TaskItem("Setup Azure DevOps Pipeline", adminUser.Id, "Create the YAML file for CI/CD", existingCategories["Work"].Id, DateTimeOffset.UtcNow.AddDays(7)),
+                        new TaskItem("Review CS101", adminUser.Id, "Read up on the chapter", existingCategories["Study"].Id, DateTimeOffset.UtcNow.AddDays(3)),
+                        new TaskItem("Buy groceries", adminUser.Id, "Milk, Eggs, Coffee", existingCategories["Personal"].Id, DateTimeOffset.UtcNow.AddDays(1))
                     };
 
                     await context.Tasks.AddRangeAsync(tasks);

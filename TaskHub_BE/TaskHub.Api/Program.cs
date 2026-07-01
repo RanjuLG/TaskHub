@@ -49,6 +49,8 @@ builder.Services.AddDbContext<TaskDbContext>(options =>
 
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 // Basic Authentication
 builder.Services.AddAuthentication("BasicAuthentication")

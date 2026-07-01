@@ -8,7 +8,7 @@ namespace TaskHub.Domain.Interfaces
 {
     public interface ITaskRepository
     {
-        Task<(List<TaskItem> Items, int TotalCount, int PendingCount, int CompletedCount, List<string> Categories)> GetFilteredAsync(Guid userId, string? category, bool? isCompleted, TaskSortOption sortBy, int pageNumber, int pageSize);
+        Task<(List<TaskItem> Items, int TotalCount, int PendingCount, int CompletedCount)> GetFilteredAsync(Guid userId, Guid? categoryId, bool? isCompleted, TaskSortOption sortBy, int pageNumber, int pageSize);
         Task<TaskItem?> GetByIdAsync(Guid id, Guid userId);
         Task AddAsync(TaskItem task);
         Task UpdateAsync(TaskItem task);

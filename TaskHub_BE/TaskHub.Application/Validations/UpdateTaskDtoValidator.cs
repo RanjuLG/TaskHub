@@ -14,8 +14,9 @@ namespace TaskHub.Application.Validations
                 .NotEmpty().WithMessage("Title is required.")
                 .MaximumLength(100).WithMessage("Title cannot exceed 100 characters.");
 
-            RuleFor(x => x.Category)
-                .MaximumLength(50).WithMessage("Category cannot exceed 50 characters.");
+            RuleFor(x => x.CategoryId)
+                .NotEqual(Guid.Empty).WithMessage("CategoryId is invalid.")
+                .When(x => x.CategoryId.HasValue);
         }
     }
 }

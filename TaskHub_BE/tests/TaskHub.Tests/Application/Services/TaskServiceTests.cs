@@ -1,4 +1,4 @@
-﻿using Moq;
+using Moq;
 using TaskHub.Application.DTOs;
 using TaskHub.Application.Enums;
 using TaskHub.Application.Exceptions;
@@ -16,6 +16,8 @@ public class TaskServiceTests
 
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid TaskId = Guid.NewGuid();
+    private static readonly Guid WorkCategoryId = Guid.NewGuid();
+    private static readonly Guid PersonalCategoryId = Guid.NewGuid();
 
     public TaskServiceTests()
     {
@@ -23,23 +25,23 @@ public class TaskServiceTests
         _sut = new TaskService(_repoMock.Object);
     }
 
-    // UpdateTaskDto: (Title, Description, Category, Deadline, IsCompleted)
+    // UpdateTaskDto: (Title, Description, CategoryId, Deadline, IsCompleted)
     private static UpdateTaskDto MakeUpdateDto(
         string title = "Updated",
         string? desc = null,
-        string? category = null,
+        Guid? categoryId = null,
         DateTimeOffset? dl = null,
         bool isCompleted = false) =>
-        new(title, desc, category, dl, isCompleted);
+        new(title, desc, categoryId, dl, isCompleted);
 
     private static TaskItem MakeTask(
         string title = "Test Task",
-        string? category = "Work",
+        Guid? categoryId = null,
         bool isCompleted = false,
         string? desc = null,
         DateTimeOffset? deadline = null)
     {
-        var t = new TaskItem(title, UserId, desc, category, deadline);
+        var t = new TaskItem(title, UserId, desc, categoryId ?? WorkCategoryId, deadline);
         if (isCompleted) t.MarkAsCompleted();
         return t;
     }
@@ -53,7 +55,7 @@ public class TaskServiceTests
             var tasks = new List<TaskItem> { MakeTask("Task A"), MakeTask("Task B") };
             _repoMock
                 .Setup(r => r.GetFilteredAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, 8))
-                .ReturnsAsync((tasks, 2, 2, 0, new List<string> { "Work" }));
+                .ReturnsAsync((tasks, 2, 2, 0));
 
             var result = await _sut.GetAllTasksAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, 8);
 
@@ -62,23 +64,22 @@ public class TaskServiceTests
             Assert.Equal(0, result.CompletedCount);
             Assert.Equal(1, result.TotalPages);
             Assert.Equal(2, result.Items.Count);
-            Assert.Single(result.Categories);
         }
 
         [Fact]
         public async Task MapsItemFieldsCorrectly()
         {
             var deadline = DateTimeOffset.UtcNow.AddDays(3);
-            var tasks = new List<TaskItem> { MakeTask("My Task", "Personal", deadline: deadline) };
+            var tasks = new List<TaskItem> { MakeTask("My Task", PersonalCategoryId, deadline: deadline) };
             _repoMock
                 .Setup(r => r.GetFilteredAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, 8))
-                .ReturnsAsync((tasks, 1, 1, 0, new List<string>()));
+                .ReturnsAsync((tasks, 1, 1, 0));
 
             var result = await _sut.GetAllTasksAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, 8);
             var item = result.Items[0];
 
             Assert.Equal("My Task", item.Title);
-            Assert.Equal("Personal", item.Category);
+            Assert.Equal(PersonalCategoryId, item.CategoryId);
             Assert.Equal(deadline, item.Deadline);
             Assert.False(item.IsCompleted);
             Assert.Null(item.CompletedAt);
@@ -92,7 +93,7 @@ public class TaskServiceTests
         {
             _repoMock
                 .Setup(r => r.GetFilteredAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, expected, 8))
-                .ReturnsAsync((new List<TaskItem>(), 0, 0, 0, new List<string>()));
+                .ReturnsAsync((new List<TaskItem>(), 0, 0, 0));
 
             await _sut.GetAllTasksAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, raw, 8);
 
@@ -108,7 +109,7 @@ public class TaskServiceTests
         {
             _repoMock
                 .Setup(r => r.GetFilteredAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, expected))
-                .ReturnsAsync((new List<TaskItem>(), 0, 0, 0, new List<string>()));
+                .ReturnsAsync((new List<TaskItem>(), 0, 0, 0));
 
             await _sut.GetAllTasksAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, raw);
 
@@ -121,7 +122,7 @@ public class TaskServiceTests
         {
             _repoMock
                 .Setup(r => r.GetFilteredAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, 8))
-                .ReturnsAsync((new List<TaskItem>(), 0, 0, 0, new List<string>()));
+                .ReturnsAsync((new List<TaskItem>(), 0, 0, 0));
 
             var result = await _sut.GetAllTasksAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, 8);
 
@@ -137,7 +138,7 @@ public class TaskServiceTests
         {
             _repoMock
                 .Setup(r => r.GetFilteredAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, pageSize))
-                .ReturnsAsync((new List<TaskItem>(), total, total, 0, new List<string>()));
+                .ReturnsAsync((new List<TaskItem>(), total, total, 0));
 
             var result = await _sut.GetAllTasksAsync(UserId, null, null, TaskSortOption.CreatedAtDesc, 1, pageSize);
 
@@ -151,7 +152,7 @@ public class TaskServiceTests
         [Fact]
         public async Task ReturnsMappedDto_WhenTaskExists()
         {
-            var task = MakeTask("My Task", "Personal");
+            var task = MakeTask("My Task", PersonalCategoryId);
             _repoMock.Setup(r => r.GetByIdAsync(task.Id, UserId)).ReturnsAsync(task);
 
             var result = await _sut.GetTaskByIdAsync(UserId, task.Id);
@@ -159,7 +160,7 @@ public class TaskServiceTests
             Assert.NotNull(result);
             Assert.Equal(task.Id, result.Id);
             Assert.Equal("My Task", result.Title);
-            Assert.Equal("Personal", result.Category);
+            Assert.Equal(PersonalCategoryId, result.CategoryId);
             Assert.False(result.IsCompleted);
             Assert.Null(result.CompletedAt);
         }
@@ -192,12 +193,15 @@ public class TaskServiceTests
         [Fact]
         public async Task AddsTask_AndReturnsMappedDto()
         {
-            var dto = new CreateTaskDto("New Task", "Some desc", "Work", null);
+            var dto = new CreateTaskDto("New Task", "Some desc", WorkCategoryId, null);
             TaskItem? captured = null;
             _repoMock
                 .Setup(r => r.AddAsync(It.IsAny<TaskItem>()))
                 .Callback<TaskItem>(t => captured = t)
                 .Returns(Task.CompletedTask);
+            _repoMock
+                .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), UserId))
+                .ReturnsAsync(() => captured);
 
             var result = await _sut.CreateTaskAsync(UserId, dto);
 
@@ -205,7 +209,7 @@ public class TaskServiceTests
             Assert.NotNull(captured);
             Assert.Equal("New Task", result.Title);
             Assert.Equal("Some desc", result.Description);
-            Assert.Equal("Work", result.Category);
+            Assert.Equal(WorkCategoryId, result.CategoryId);
             Assert.Equal(UserId, captured!.UserId);
             Assert.False(result.IsCompleted);
             Assert.Null(result.CompletedAt);
@@ -221,6 +225,9 @@ public class TaskServiceTests
                 .Setup(r => r.AddAsync(It.IsAny<TaskItem>()))
                 .Callback<TaskItem>(t => captured = t)
                 .Returns(Task.CompletedTask);
+            _repoMock
+                .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), UserId))
+                .ReturnsAsync(() => captured);
 
             var result = await _sut.CreateTaskAsync(UserId, dto);
 
@@ -232,7 +239,14 @@ public class TaskServiceTests
         public async Task DeadlineIsNull_WhenNotProvided()
         {
             var dto = new CreateTaskDto("No Deadline", null, null, null);
-            _repoMock.Setup(r => r.AddAsync(It.IsAny<TaskItem>())).Returns(Task.CompletedTask);
+            TaskItem? captured = null;
+            _repoMock
+                .Setup(r => r.AddAsync(It.IsAny<TaskItem>()))
+                .Callback<TaskItem>(t => captured = t)
+                .Returns(Task.CompletedTask);
+            _repoMock
+                .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), UserId))
+                .ReturnsAsync(() => captured);
 
             var result = await _sut.CreateTaskAsync(UserId, dto);
 
@@ -248,6 +262,9 @@ public class TaskServiceTests
                 .Setup(r => r.AddAsync(It.IsAny<TaskItem>()))
                 .Callback<TaskItem>(t => captured = t)
                 .Returns(Task.CompletedTask);
+            _repoMock
+                .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), UserId))
+                .ReturnsAsync(() => captured);
 
             await _sut.CreateTaskAsync(UserId, dto);
 
@@ -263,6 +280,9 @@ public class TaskServiceTests
                 .Setup(r => r.AddAsync(It.IsAny<TaskItem>()))
                 .Callback<TaskItem>(t => captured = t)
                 .Returns(Task.CompletedTask);
+            _repoMock
+                .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), UserId))
+                .ReturnsAsync(() => captured);
 
             await _sut.CreateTaskAsync(UserId, dto);
 
@@ -278,7 +298,7 @@ public class TaskServiceTests
         public async Task CallsUpdateAsync_WhenTaskExists()
         {
             var task = MakeTask();
-            var dto = MakeUpdateDto("Updated Title", "New desc", "Home");
+            var dto = MakeUpdateDto("Updated Title", "New desc", PersonalCategoryId);
             _repoMock.Setup(r => r.GetByIdAsync(task.Id, UserId)).ReturnsAsync(task);
 
             await _sut.UpdateTaskAsync(UserId, task.Id, dto);
@@ -321,7 +341,7 @@ public class TaskServiceTests
         public async Task CompletingTask_SetsCompletedAt()
         {
             var task = MakeTask(isCompleted: false);
-            // UpdateTaskDto: (Title, Description, Category, Deadline, IsCompleted)
+            // UpdateTaskDto: (Title, Description, CategoryId, Deadline, IsCompleted)
             var dto = MakeUpdateDto(isCompleted: true);
             _repoMock.Setup(r => r.GetByIdAsync(task.Id, UserId)).ReturnsAsync(task);
 

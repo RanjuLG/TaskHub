@@ -17,14 +17,12 @@ namespace TaskHub.Infrastructre.Repositories
         {
             _context = context;
         }
-        public async Task<(List<TaskItem> Items, int TotalCount, int PendingCount, int CompletedCount, List<string> Categories)>
-        GetFilteredAsync(Guid userId, string? category, bool? isCompleted, TaskSortOption sortBy, int pageNumber, int pageSize)
+        public async Task<(List<TaskItem> Items, int TotalCount, int PendingCount, int CompletedCount)>
+        GetFilteredAsync(Guid userId, Guid? categoryId, bool? isCompleted, TaskSortOption sortBy, int pageNumber, int pageSize)
         {
-            var baseQuery = _context.Tasks.Where(t => t.UserId == userId && t.DeletedAt == null);
+            var baseQuery = _context.Tasks.Include(t => t.Category).Where(t => t.UserId == userId && t.DeletedAt == null);
 
-            var categories = await GetUniqueCategoriesAsync(baseQuery);
-
-            var categoryFilteredQuery = ApplyCategoryFilter(baseQuery, category);
+            var categoryFilteredQuery = ApplyCategoryFilter(baseQuery, categoryId);
 
             var (pendingCount, completedCount) = await GetStatusCountsAsync(categoryFilteredQuery);
 
@@ -36,14 +34,14 @@ namespace TaskHub.Infrastructre.Repositories
                 .Take(pageSize)
                 .ToListAsync();
 
-            return (items, totalCount, pendingCount, completedCount, categories);
+            return (items, totalCount, pendingCount, completedCount);
         }
 
-        
+
 
         public async Task<TaskItem?> GetByIdAsync(Guid id, Guid userId)
         {
-            return await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId && t.DeletedAt == null);
+            return await _context.Tasks.Include(t => t.Category).FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId && t.DeletedAt == null);
         }
 
         public Task AddAsync(TaskItem task)
@@ -80,15 +78,6 @@ namespace TaskHub.Infrastructre.Repositories
             };
         }
 
-        private static async Task<List<string>> GetUniqueCategoriesAsync(IQueryable<TaskItem> query)
-        {
-            return await query
-                .Where(t => !string.IsNullOrWhiteSpace(t.Category) && t.Category != "default")
-                .Select(t => t.Category!)
-                .Distinct()
-                .ToListAsync();
-        }
-
         private static async Task<(int Pending, int Completed)> GetStatusCountsAsync(IQueryable<TaskItem> query)
         {
             var statusCounts = await query
@@ -102,11 +91,11 @@ namespace TaskHub.Infrastructre.Repositories
             return (pendingCount, completedCount);
         }
 
-        private static IQueryable<TaskItem> ApplyCategoryFilter(IQueryable<TaskItem> query, string? category)
+        private static IQueryable<TaskItem> ApplyCategoryFilter(IQueryable<TaskItem> query, Guid? categoryId)
         {
-            return string.IsNullOrWhiteSpace(category)
-                ? query
-                : query.Where(t => t.Category == category);
+            return categoryId.HasValue
+                ? query.Where(t => t.CategoryId == categoryId.Value)
+                : query;
         }
 
         private static IQueryable<TaskItem> ApplyCompletionFilter(IQueryable<TaskItem> query, bool? isCompleted)

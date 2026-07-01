@@ -11,7 +11,8 @@ namespace TaskHub.Domain.Entities
         public string Title { get; private set; } = string.Empty;
         public string? Description { get; private set; }
         public bool IsCompleted { get; private set; }
-        public string? Category { get; private set; }
+        public Guid? CategoryId { get; private set; }
+        public Category? Category { get; private set; }
         public DateTimeOffset? CompletedAt { get; private set; }
         public DateTimeOffset? Deadline { get; private set; }
         public DateTimeOffset CreatedAt { get; private set; }
@@ -20,23 +21,23 @@ namespace TaskHub.Domain.Entities
 
         private TaskItem() { }
 
-        public TaskItem(string title, Guid userId, string? description, string? category, DateTimeOffset? deadline = null)
+        public TaskItem(string title, Guid userId, string? description, Guid? categoryId, DateTimeOffset? deadline = null)
         {
             Id = Guid.NewGuid();
             UserId = userId;
             Title = title;
             Description = description;
-            Category = category;
+            CategoryId = categoryId;
             IsCompleted = false;
             Deadline = deadline;
             CreatedAt = DateTimeOffset.UtcNow;
         }
 
-        public void Update(string title, string? description, string? category, bool isCompleted, DateTimeOffset? deadline)
+        public void Update(string title, string? description, Guid? categoryId, bool isCompleted, DateTimeOffset? deadline)
         {
             Title = title;
             Description = description;
-            Category = category;
+            CategoryId = categoryId;
             Deadline = deadline;
             UpdatedAt = DateTimeOffset.UtcNow;
 

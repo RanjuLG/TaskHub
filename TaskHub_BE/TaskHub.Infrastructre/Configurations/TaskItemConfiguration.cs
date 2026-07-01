@@ -16,12 +16,16 @@ namespace TaskHub.Infrastructre.Configurations
             // Database constraints
             builder.Property(t => t.Title).IsRequired().HasMaxLength(100);
             builder.Property(t => t.Description).HasMaxLength(1000);
-            builder.Property(t => t.Category).HasMaxLength(50);
 
             builder.HasOne<User>()
                .WithMany()
                .HasForeignKey(t => t.UserId)
                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(t => t.Category)
+               .WithMany()
+               .HasForeignKey(t => t.CategoryId)
+               .OnDelete(DeleteBehavior.SetNull);
 
 
             // Global Query Filter for Soft Delete

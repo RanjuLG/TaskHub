@@ -22,20 +22,19 @@ namespace TaskHub.Application.Services
         }
 
         public async Task<TaskListResponse> GetAllTasksAsync(
-            Guid userId, string? category, bool? isCompleted,
+            Guid userId, Guid? categoryId, bool? isCompleted,
             TaskSortOption sortBy, int pageNumber, int pageSize)
         {
             var safePageNumber = pageNumber < 1 ? 1 : pageNumber;
             var safePageSize = pageSize < 1 ? 8 : pageSize;
 
-            var (items, totalCount, pendingCount, completedCount, categories) =
-                await _taskRepository.GetFilteredAsync(userId, category, isCompleted, sortBy, safePageNumber, safePageSize);
+            var (items, totalCount, pendingCount, completedCount) =
+                await _taskRepository.GetFilteredAsync(userId, categoryId, isCompleted, sortBy, safePageNumber, safePageSize);
 
             var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)safePageSize);
 
             return new TaskListResponse(
                 items.Select(MapTask).ToList(),
-                categories,
                 safePageNumber, safePageSize,
                 totalCount, totalPages,
                 pendingCount, completedCount
@@ -58,18 +57,17 @@ namespace TaskHub.Application.Services
         public async Task<TaskDto> CreateTaskAsync(Guid userId, CreateTaskDto dto)
         {
             var task = new TaskItem(
-                            dto.Title, 
+                            dto.Title,
                             userId,
-                            dto.Description, 
-                            dto.Category,
+                            dto.Description,
+                            dto.CategoryId,
                             dto.Deadline
                             );
 
             await _taskRepository.AddAsync(task);
 
-            return MapTask(task);
-
-
+            var created = await _taskRepository.GetByIdAsync(task.Id, userId);
+            return MapTask(created!);
         }
 
 
@@ -82,7 +80,7 @@ namespace TaskHub.Application.Services
                 throw new NotFoundException($"Task with ID {id} was not found.");
             }
 
-            task.Update(dto.Title, dto.Description, dto.Category, dto.IsCompleted, dto.Deadline);
+            task.Update(dto.Title, dto.Description, dto.CategoryId, dto.IsCompleted, dto.Deadline);
 
             await _taskRepository.UpdateAsync(task);
         }
@@ -123,7 +121,8 @@ namespace TaskHub.Application.Services
                 task.Title,
                 task.Description,
                 task.IsCompleted,
-                task.Category,
+                task.CategoryId,
+                task.Category?.Name,
                 task.Deadline,
                 task.CompletedAt,
                 task.CreatedAt

@@ -23,14 +23,13 @@ namespace TaskHub.Api.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetTasks(
-            [FromQuery] string? category,
+            [FromQuery] Guid? categoryId,
             [FromQuery] bool? isCompleted,
             [FromQuery] TaskSortOption sortBy = TaskSortOption.Default,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 8)
         {
-            var normalizedCategory = string.Equals(category, "all", StringComparison.OrdinalIgnoreCase) ? null : category;
-            var tasks = await _taskService.GetAllTasksAsync(CurrentUserId, normalizedCategory, isCompleted, sortBy, pageNumber, pageSize);
+            var tasks = await _taskService.GetAllTasksAsync(CurrentUserId, categoryId, isCompleted, sortBy, pageNumber, pageSize);
             return Ok(tasks);
         }
 

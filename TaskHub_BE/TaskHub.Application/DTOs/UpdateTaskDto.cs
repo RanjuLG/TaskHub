@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System;
 
 namespace TaskHub.Application.DTOs
 {
     public record UpdateTaskDto(
          string Title,
          string? Description,
-         string? Category,
+         Guid? CategoryId,
          DateTimeOffset? Deadline,
          bool IsCompleted
-     ) : CreateTaskDto(Title, Description, Category, Deadline);
+     ) : CreateTaskDto(Title, Description, CategoryId, Deadline);
 }
