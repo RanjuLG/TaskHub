@@ -3,6 +3,7 @@ using TaskHub.Application.DTOs;
 using TaskHub.Application.Enums;
 using TaskHub.Application.Exceptions;
 using TaskHub.Application.Services;
+using TaskHub.Application.Validations;
 using TaskHub.Domain.Entities;
 using TaskHub.Domain.Interfaces;
 
@@ -22,7 +23,7 @@ public class TaskServiceTests
     public TaskServiceTests()
     {
         _repoMock = new Mock<ITaskRepository>();
-        _sut = new TaskService(_repoMock.Object);
+        _sut = new TaskService(_repoMock.Object, new CreateTaskDtoValidator(), new UpdateTaskDtoValidator());
     }
 
     // UpdateTaskDto: (Title, Description, CategoryId, Deadline, IsCompleted)

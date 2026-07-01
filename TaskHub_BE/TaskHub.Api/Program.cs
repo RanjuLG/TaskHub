@@ -1,11 +1,14 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
 using TaskHub.Api.Middleware.Handlers;
+using TaskHub.Application.DTOs;
 using TaskHub.Application.Interfaces;
 using TaskHub.Application.Services;
+using TaskHub.Application.Validations;
 using TaskHub.Domain.Interfaces;
 using TaskHub.Infrastructre.Data;
 using TaskHub.Infrastructre.Repositories;
@@ -51,6 +54,8 @@ builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IValidator<CreateTaskDto>, CreateTaskDtoValidator>();
+builder.Services.AddScoped<IValidator<UpdateTaskDto>, UpdateTaskDtoValidator>();
 
 // Basic Authentication
 builder.Services.AddAuthentication("BasicAuthentication")

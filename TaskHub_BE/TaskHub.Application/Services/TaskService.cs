@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using FluentValidation;
 using TaskHub.Application.DTOs;
 using TaskHub.Application.Enums;
 using TaskHub.Application.Exceptions;
@@ -15,10 +16,17 @@ namespace TaskHub.Application.Services
     public class TaskService : ITaskService
     {
         private readonly ITaskRepository _taskRepository;
+        private readonly IValidator<CreateTaskDto> _createValidator;
+        private readonly IValidator<UpdateTaskDto> _updateValidator;
 
-        public TaskService(ITaskRepository taskRepository)
+        public TaskService(
+            ITaskRepository taskRepository,
+            IValidator<CreateTaskDto> createValidator,
+            IValidator<UpdateTaskDto> updateValidator)
         {
             _taskRepository = taskRepository;
+            _createValidator = createValidator;
+            _updateValidator = updateValidator;
         }
 
         public async Task<TaskListResponse> GetAllTasksAsync(
@@ -56,6 +64,12 @@ namespace TaskHub.Application.Services
 
         public async Task<TaskDto> CreateTaskAsync(Guid userId, CreateTaskDto dto)
         {
+            var validationResult = await _createValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+            {
+                throw new TaskHub.Application.Exceptions.ValidationException(validationResult.ToDictionary());
+            }
+
             var task = new TaskItem(
                             dto.Title,
                             userId,
@@ -73,6 +87,12 @@ namespace TaskHub.Application.Services
 
         public async Task UpdateTaskAsync(Guid userId, Guid id, UpdateTaskDto dto)
         {
+            var validationResult = await _updateValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+            {
+                throw new TaskHub.Application.Exceptions.ValidationException(validationResult.ToDictionary());
+            }
+
             var task = await _taskRepository.GetByIdAsync(id, userId);
 
             if (task == null)
